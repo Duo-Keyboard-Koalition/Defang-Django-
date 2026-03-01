@@ -122,7 +122,7 @@ def _build_headers() -> dict:
         "Authorization": f'Snowflake Token="{token}"',
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "X-Snowflake-Authorization-Token-Type": "OAUTH",
+        "X-Snowflake-Authorization-Token-Type": "SESSION",
     }
 
 
