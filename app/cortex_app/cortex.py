@@ -167,7 +167,7 @@ def chat(
         headers=_build_headers(),
         json=payload,
         timeout=120,
-        stream=stream,
+        stream=True,  # always stream so iter_lines() works (Cortex always returns SSE)
     )
     resp.raise_for_status()
 
