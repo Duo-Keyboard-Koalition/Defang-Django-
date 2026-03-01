@@ -1,21 +1,11 @@
-name: Deploy
-
+# Defang deploy disabled — use docker compose on prod machine directly
+# git pull origin main && docker compose up -d --build
+name: Deploy (disabled)
 on:
   push:
-    branches:
-      - main
-
+    branches: [main]
 jobs:
-  deploy:
-    environment: playground
+  skip:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-
     steps:
-    - name: Checkout Repo
-      uses: actions/checkout@v4
-
-    - name: Deploy
-      uses: DefangLabs/defang-github-action@v1.1.0
+      - run: echo "Defang removed. Deploy via docker compose on prod machine."
