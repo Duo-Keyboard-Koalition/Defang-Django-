@@ -4,9 +4,6 @@ gunicorn==22.0.0
 packaging==24.0
 sqlparse==0.5.0
 whitenoise==6.6.0
-beautifulsoup4==4.9.3
-lxml==4.9.3
-nationstates==3.1.4
 python-dotenv==1.0.0
 snowflake-connector-python>=3.6.0
 dj-database-url>=2.1.0
