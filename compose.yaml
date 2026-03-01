@@ -9,8 +9,38 @@ services:
         target: 8000
         # published: 8000 # uncomment for local dev
     environment:
-      - DEBUG=False # set to "True" for local dev
+      - DEBUG=${DEBUG:-False}
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgres://${POSTGRES_USER:-dkk}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-dkk}
+      - CORTEX_HOST=${CORTEX_HOST:-192.168.16.113}
+      - CORTEX_PORT=${CORTEX_PORT:-5000}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
     #deploy:
     #  resources:
     #    reservations:
     #      memory: 256M
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-dkk}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-dkk}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dkk}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    #deploy:
+    #  resources:
+    #    reservations:
+    #      memory: 128M
+
+volumes:
+  pgdata:
