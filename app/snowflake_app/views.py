@@ -19,7 +19,9 @@ from django.views.decorators.http import require_http_methods
 
 logger = logging.getLogger(__name__)
 
-CORTEX_BASE_URL = os.environ.get("CORTEX_BASE_URL", "http://192.168.16.113:8432/v1")
+_cortex_host = os.environ.get("CORTEX_HOST", "192.168.16.113")
+_cortex_port = os.environ.get("CORTEX_PORT", "8432")
+CORTEX_BASE_URL = os.environ.get("CORTEX_BASE_URL", f"http://{_cortex_host}:{_cortex_port}/v1")
 CORTEX_API_KEY = os.environ.get("CORTEX_API_KEY", "cortex")
 
 # Default model if none specified
