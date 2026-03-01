@@ -80,13 +80,14 @@ def chat(
     conn = _get_connection()
     try:
         cur = conn.cursor()
-        # CORTEX.COMPLETE requires messages as a typed ARRAY, not VARIANT
-        # We use TO_ARRAY(PARSE_JSON(...)) to ensure correct typing
-        messages_json = json.dumps(messages)
-        cur.execute(
-            f"SELECT SNOWFLAKE.CORTEX.COMPLETE('{_model}', TO_ARRAY(PARSE_JSON(%s))) AS response",
-            (messages_json,)
-        )
+        # Build ARRAY_CONSTRUCT with OBJECT_CONSTRUCT for each message
+        obj_parts = []
+        for m in messages:
+            role = m["role"].replace("'", "\\'")
+            content = m["content"].replace("'", "\\'")
+            obj_parts.append(f"OBJECT_CONSTRUCT('role', '{role}', 'content', '{content}')")
+        array_sql = f"ARRAY_CONSTRUCT({', '.join(obj_parts)})"
+        cur.execute(f"SELECT SNOWFLAKE.CORTEX.COMPLETE('{_model}', {array_sql}) AS response")
         row = cur.fetchone()
         if not row or not row[0]:
             raise ValueError("Empty response from Snowflake Cortex")
