@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DKK Cortex Chat</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #161a22;
+      --border:    #2a2f3d;
+      --accent:    #5b8af5;
+      --accent-dk: #3d6ae3;
+      --text:      #e2e8f0;
+      --muted:     #6b7280;
+      --user-bg:   #1e3a5f;
+      --bot-bg:    #1a1f2e;
+      --radius:    12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 1rem; font-weight: 600; }
+    header .badge {
+      font-size: 0.7rem;
+      background: var(--accent);
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 99px;
+      margin-left: auto;
+    }
+
+    /* ── Model selector ── */
+    #model-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #model-bar label { font-size: 0.8rem; color: var(--muted); }
+    #model-select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    #model-select:focus { outline: none; border-color: var(--accent); }
+
+    /* ── Messages ── */
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    #messages::-webkit-scrollbar { width: 6px; }
+    #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .msg {
+      display: flex;
+      gap: 10px;
+      max-width: 80%;
+      animation: fadeUp .2s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .msg.bot  { align-self: flex-start; }
+
+    .avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+      background: var(--border);
+    }
+    .msg.user .avatar { background: var(--accent-dk); }
+
+    .bubble {
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      line-height: 1.55;
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg.user .bubble {
+      background: var(--user-bg);
+      border-bottom-right-radius: 3px;
+    }
+    .msg.bot .bubble {
+      background: var(--bot-bg);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 3px;
+    }
+
+    .meta {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── Typing indicator ── */
+    .typing-dots span {
+      display: inline-block;
+      width: 6px; height: 6px;
+      background: var(--muted);
+      border-radius: 50%;
+      margin: 0 2px;
+      animation: bounce .9s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: .15s; }
+    .typing-dots span:nth-child(3) { animation-delay: .3s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40%           { transform: translateY(-6px); }
+    }
+
+    /* ── Input bar ── */
+    #input-bar {
+      display: flex;
+      gap: 10px;
+      padding: 14px 20px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #user-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      resize: none;
+      min-height: 44px;
+      max-height: 160px;
+      line-height: 1.4;
+      transition: border-color .2s;
+    }
+    #user-input:focus { outline: none; border-color: var(--accent); }
+    #user-input::placeholder { color: var(--muted); }
+
+    #send-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 0 18px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background .2s;
+      flex-shrink: 0;
+    }
+    #send-btn:hover:not(:disabled) { background: var(--accent-dk); }
+    #send-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Empty state ── */
+    #empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex: 1;
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 40px;
+    }
+    #empty-state .icon { font-size: 3rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:1.3rem">❄️</span>
+  <h1>DKK Cortex Chat</h1>
+  <span class="badge">Snowflake Cortex</span>
+</header>
+
+<div id="model-bar">
+  <label for="model-select">Model</label>
+  <select id="model-select">
+    {% for m in models %}
+    <option value="{{ m.id }}"{% if m.id == default_model %} selected{% endif %}>{{ m.label }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<div id="messages">
+  <div id="empty-state">
+    <div class="icon">🤖</div>
+    <div>Start a conversation with Cortex</div>
+    <div style="font-size:0.75rem;margin-top:4px">Powered by Snowflake Cortex — no OpenAI required</div>
+  </div>
+</div>
+
+<div id="input-bar">
+  <textarea id="user-input" placeholder="Message Cortex…" rows="1"></textarea>
+  <button id="send-btn" title="Send">➤</button>
+</div>
+
+<script>
+  const messagesEl = document.getElementById('messages');
+  const inputEl    = document.getElementById('user-input');
+  const sendBtn    = document.getElementById('send-btn');
+  const modelSel   = document.getElementById('model-select');
+  const emptyState = document.getElementById('empty-state');
+
+  let history = [];  // [{role, content}]
+
+  function clearEmpty() {
+    if (emptyState) emptyState.remove();
+  }
+
+  function appendMsg(role, text, model) {
+    clearEmpty();
+    const wrap = document.createElement('div');
+    wrap.className = `msg ${role === 'user' ? 'user' : 'bot'}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    avatar.textContent = role === 'user' ? '🧑' : '❄️';
+
+    const inner = document.createElement('div');
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+
+    inner.appendChild(bubble);
+
+    if (role === 'assistant' && model) {
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = model;
+      inner.appendChild(meta);
+    }
+
+    wrap.appendChild(avatar);
+    wrap.appendChild(inner);
+    messagesEl.appendChild(wrap);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return bubble;
+  }
+
+  function appendTyping() {
+    clearEmpty();
+    const wrap = document.createElement('div');
+    wrap.className = 'msg bot';
+    wrap.id = 'typing-indicator';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    avatar.textContent = '❄️';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble typing-dots';
+    bubble.innerHTML = '<span></span><span></span><span></span>';
+
+    wrap.appendChild(avatar);
+    wrap.appendChild(bubble);
+    messagesEl.appendChild(wrap);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return wrap;
+  }
+
+  async function sendMessage() {
+    const text = inputEl.value.trim();
+    if (!text) return;
+
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    sendBtn.disabled = true;
+
+    appendMsg('user', text);
+    history.push({ role: 'user', content: text });
+
+    const typing = appendTyping();
+
+    try {
+      const resp = await fetch("{% url 'frontend_app:chat_proxy' %}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify({
+          message: text,
+          model: modelSel.value,
+          history: history.slice(-10),  // last 10 turns context
+        }),
+      });
+      const data = await resp.json();
+      typing.remove();
+
+      if (data.error) {
+        appendMsg('assistant', `⚠️ Error: ${data.error}`, null);
+      } else {
+        const reply = data.content || '';
+        appendMsg('assistant', reply, data.model || modelSel.value);
+        history.push({ role: 'assistant', content: reply });
+      }
+    } catch (err) {
+      typing.remove();
+      appendMsg('assistant', `⚠️ Request failed: ${err.message}`, null);
+    } finally {
+      sendBtn.disabled = false;
+      inputEl.focus();
+    }
+  }
+
+  // Auto-resize textarea
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + 'px';
+  });
+
+  // Enter to send (Shift+Enter for newline)
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  sendBtn.addEventListener('click', sendMessage);
+
+  // CSRF helper
+  function getCookie(name) {
+    const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return m ? m.pop() : '';
+  }
+</script>
+
+</body>
+</html>
