@@ -77,20 +77,14 @@ def chat(
         messages.extend(history)
     messages.append({"role": "user", "content": user_message})
 
-    # Serialize to JSON string for the SQL call
-    messages_json = json.dumps(messages).replace("'", "\\'")
-
-    sql = f"""
-        SELECT SNOWFLAKE.CORTEX.COMPLETE(
-            '{_model}',
-            PARSE_JSON($${json.dumps(messages)}$$)
-        ) AS response
-    """
-
     conn = _get_connection()
     try:
         cur = conn.cursor()
-        cur.execute(sql)
+        # Use parameterized query to avoid quoting issues
+        cur.execute(
+            "SELECT SNOWFLAKE.CORTEX.COMPLETE(%s, PARSE_JSON(%s)) AS response",
+            (_model, json.dumps(messages))
+        )
         row = cur.fetchone()
         if not row or not row[0]:
             raise ValueError("Empty response from Snowflake Cortex")
