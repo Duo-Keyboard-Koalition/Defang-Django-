@@ -80,24 +80,37 @@ def chat(
     conn = _get_connection()
     try:
         cur = conn.cursor()
-        # Build ARRAY_CONSTRUCT with OBJECT_CONSTRUCT for each message
-        obj_parts = []
+        # Format messages as a plain prompt string (works with all Cortex model versions)
+        # Multi-turn format: System: ... \nUser: ... \nAssistant: ...
+        prompt_parts = []
         for m in messages:
-            role = m["role"].replace("'", "\\'")
-            content = m["content"].replace("'", "\\'")
-            obj_parts.append(f"OBJECT_CONSTRUCT('role', '{role}', 'content', '{content}')")
-        array_sql = f"ARRAY_CONSTRUCT({', '.join(obj_parts)})"
-        cur.execute(f"SELECT SNOWFLAKE.CORTEX.COMPLETE('{_model}', {array_sql}) AS response")
+            role = m["role"].capitalize()
+            prompt_parts.append(f"{role}: {m['content']}")
+        prompt_parts.append("Assistant:")
+        prompt = "\n".join(prompt_parts)
+
+        cur.execute(
+            "SELECT SNOWFLAKE.CORTEX.COMPLETE(%s, %s) AS response",
+            (_model, prompt)
+        )
         row = cur.fetchone()
         if not row or not row[0]:
             raise ValueError("Empty response from Snowflake Cortex")
 
-        result = json.loads(row[0]) if isinstance(row[0], str) else row[0]
-
-        # Snowflake Cortex response shape
-        choices = result.get("choices", [{}])
-        content = choices[0].get("messages", "") if choices else ""
-        usage = result.get("usage", {})
+        # String prompt format returns plain text, not JSON
+        raw = row[0]
+        if isinstance(raw, str):
+            try:
+                result = json.loads(raw)
+                choices = result.get("choices", [{}])
+                content = choices[0].get("messages", choices[0].get("content", "")) if choices else ""
+                usage = result.get("usage", {})
+            except (json.JSONDecodeError, TypeError):
+                content = raw.strip()
+                usage = {}
+        else:
+            content = str(raw)
+            usage = {}
 
         return {
             "content": content,
