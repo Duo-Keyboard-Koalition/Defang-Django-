@@ -15,13 +15,11 @@ services:
       - CORTEX_HOST=${CORTEX_HOST:-192.168.16.113}
       - CORTEX_PORT=${CORTEX_PORT:-5000}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NATION=${NATION}
+      - NATION_PASSWD=${NATION_PASSWD}
     depends_on:
       db:
         condition: service_healthy
-    #deploy:
-    #  resources:
-    #    reservations:
-    #      memory: 256M
 
   db:
     image: postgres:16-alpine
@@ -37,10 +35,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    #deploy:
-    #  resources:
-    #    reservations:
-    #      memory: 128M
 
 volumes:
   pgdata:
