@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'cortex_app',
     'frontend_app',
     'snowflake_app',
+    'cursor_app',
 ]
 
 MIDDLEWARE = [

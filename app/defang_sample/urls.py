@@ -23,6 +23,7 @@ urlpatterns = [
     path('todos/', include('example_app.urls', namespace='example_app')),
     path('cortex/', include('cortex_app.urls', namespace='cortex_app')),
     path('snowflake/', include('snowflake_app.urls', namespace='snowflake_app')),
+    path('cursor/', include('cursor_app.urls', namespace='cursor_app')),
     path('chat-ui/', include('frontend_app.urls', namespace='frontend_app')),
     path('', RedirectView.as_view(url='/chat-ui/')),
     path('chat/', include('chat_app.urls')),
