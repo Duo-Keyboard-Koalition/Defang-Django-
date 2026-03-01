@@ -174,26 +174,40 @@ def chat(
     if stream:
         return resp  # caller handles streaming
 
-    # Snowflake Cortex REST always returns SSE (data: {...} lines) even for non-streaming.
-    # Accumulate all chunks into a single response.
+    # Parse response — Snowflake returns JSON directly for non-streaming,
+    # SSE (data: {...}) lines for streaming requests.
+    lines = list(resp.iter_lines())
     content_parts = []
     last_chunk = {}
     usage = {}
-    for line in resp.iter_lines():
+
+    for line in lines:
         if not line:
             continue
         text = line.decode("utf-8") if isinstance(line, bytes) else line
+
+        # Strip SSE prefix if present
         if text.startswith("data:"):
             text = text[5:].strip()
         if not text or text == "[DONE]":
             continue
+
         try:
             chunk = json.loads(text)
             last_chunk = chunk
             choices = chunk.get("choices", [])
             if choices:
+                msg = choices[0].get("message", {})
                 delta = choices[0].get("delta", {})
-                content_parts.append(delta.get("content", "") or delta.get("text", ""))
+                # Non-streaming: message.content; streaming: delta.content
+                piece = (
+                    msg.get("content")
+                    or delta.get("content")
+                    or delta.get("text")
+                    or ""
+                )
+                if piece:
+                    content_parts.append(piece)
             if chunk.get("usage"):
                 usage = chunk["usage"]
         except (json.JSONDecodeError, KeyError):
