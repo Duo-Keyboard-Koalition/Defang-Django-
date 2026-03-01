@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'example_app',
     'nationstates_app',
     'chat_app',
+    'cortex_app',
 ]
 
 MIDDLEWARE = [

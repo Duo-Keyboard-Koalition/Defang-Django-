@@ -9,5 +9,5 @@ requests==2.25.1
 lxml==4.9.3
 nationstates==3.1.4
 python-dotenv==1.0.0
-openai>=1.0.0
+openai>=1.30.0
 requests>=2.31.0

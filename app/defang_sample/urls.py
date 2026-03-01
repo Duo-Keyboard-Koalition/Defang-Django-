@@ -22,6 +22,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('todos/', include('example_app.urls', namespace='example_app')),
     path('nationstates/', include('nationstates_app.urls')),
+    path('cortex/', include('cortex_app.urls', namespace='cortex_app')),
     path('', RedirectView.as_view(url='/nationstates/')),
     path('chat/', include('chat_app.urls')),
 ]
